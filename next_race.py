@@ -8,6 +8,7 @@ from cachecontrol import CacheControl
 from cachecontrol.caches import FileCache
 from dateutil.parser import parse
 from tabulate import tabulate
+from fake_useragent import UserAgent
 
 ERGAST_CALENDAR = 'http://ergast.com/api/f1/current.json'
 PREDICTOR_URL = 'http://www.f1-predictor.com/api-next-race-prediction/'
@@ -35,7 +36,10 @@ def raname_race_name(name, season):
 
 def get_json(url):
     retries_cnt = 0
+    ua = UserAgent()
+    headers = {'user-agent': ua.random}
     with requests.session() as session:
+        session.headers.update(headers)
         cached = CacheControl(session,
                               cache=FileCache('.webcache'))
         while retries_cnt < RETRIES:
@@ -43,6 +47,7 @@ def get_json(url):
             response = cached.get(url)
             if response.status_code == 200:
                 return response.json()
+            print("%s try: %s [%d]" % (ordinal(retries_cnt), url, response.status_code))
             time.sleep(random.randint(1, 5))
     return None
 
@@ -62,6 +67,9 @@ def main(output):
     # print(race_next)
 
     data = get_json(PREDICTOR_URL)
+    if not data:
+        return
+    
     if data['race_name'] != raname_race_name(race_next['raceName'], race_next['season']):
         print("Race Name Mismatch between predictor and ergast:",
               end=' ', file=output)
