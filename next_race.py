@@ -4,6 +4,8 @@ import random
 import time
 
 import requests
+from cachecontrol import CacheControl
+from cachecontrol.caches import FileCache
 from dateutil.parser import parse
 from tabulate import tabulate
 
@@ -34,9 +36,11 @@ def raname_race_name(name, season):
 def get_json(url):
     retries_cnt = 0
     with requests.session() as session:
+        cached = CacheControl(session,
+                              cache=FileCache('.webcache'))
         while retries_cnt < RETRIES:
             retries_cnt += 1
-            response = session.get(url)
+            response = cached.get(url)
             if response.status_code == 200:
                 return response.json()
             time.sleep(random.randint(1, 5))
@@ -78,9 +82,11 @@ def main(output):
         half_size = len(order_keys) // 2
 
         table_1 = []
-        table_1.append(['^row ^vs ^col'] + [driver[0:3].upper() for driver in order_keys[:half_size] ])
+        table_1.append(['^row ^vs ^col'] + [driver[0:3].upper()
+                                            for driver in order_keys[:half_size]])
         table_2 = []
-        table_2.append(['^row ^vs ^col'] + [driver[0:3].upper() for driver in order_keys[half_size:]])
+        table_2.append(['^row ^vs ^col'] + [driver[0:3].upper()
+                                            for driver in order_keys[half_size:]])
 
         for driver_1 in order_keys:
             row_1 = [driver_1[0:3].upper()]
@@ -101,11 +107,15 @@ def main(output):
         colalign = tuple(["left"] + ["right" for i in range(half_size)])
 
         print(file=output)
-        print('%s Pairwise Probabilities (Part I):\n' % (part.capitalize()), file=output)
-        print(tabulate(table_1, headers="firstrow", tablefmt="pipe", colalign=colalign), file=output)
+        print('%s Pairwise Probabilities (Part I):\n' %
+              (part.capitalize()), file=output)
+        print(tabulate(table_1, headers="firstrow",
+                       tablefmt="pipe", colalign=colalign), file=output)
         print('\n', file=output)
-        print('%s Pairwise Probabilities (Part II):\n' % (part.capitalize()), file=output)
-        print(tabulate(table_2, headers="firstrow", tablefmt="pipe", colalign=colalign), file=output)
+        print('%s Pairwise Probabilities (Part II):\n' %
+              (part.capitalize()), file=output)
+        print(tabulate(table_2, headers="firstrow",
+                       tablefmt="pipe", colalign=colalign), file=output)
         print('\n', file=output)
         return
 

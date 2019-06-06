@@ -12,6 +12,7 @@ rope = "*"
 requests = "*"
 tabulate = "*"
 python-dateutil = "*"
+cachecontrol = {extras = ["filecache"],version = "*"}
 
 [requires]
 python_version = "3.7"
