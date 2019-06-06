@@ -4,11 +4,10 @@ import random
 import time
 
 import requests
-from cachecontrol import CacheControl
-from cachecontrol.caches import FileCache
+import requests_cache
 from dateutil.parser import parse
-from tabulate import tabulate
 from fake_useragent import UserAgent
+from tabulate import tabulate
 
 ERGAST_CALENDAR = 'http://ergast.com/api/f1/current.json'
 PREDICTOR_URL = 'http://www.f1-predictor.com/api-next-race-prediction/'
@@ -40,53 +39,68 @@ def get_json(url):
     headers = {'user-agent': ua.random}
     with requests.session() as session:
         session.headers.update(headers)
-        cached = CacheControl(session,
-                              cache=FileCache('.webcache'))
         while retries_cnt < RETRIES:
             retries_cnt += 1
-            response = cached.get(url)
+            response = session.get(url)
             if response.status_code == 200:
                 return response.json()
-            print("%s try: %s [%d]" % (ordinal(retries_cnt), url, response.status_code))
+            print("%s try: %s [%d]" %
+                  (ordinal(retries_cnt), url, response.status_code))
             time.sleep(random.randint(1, 5))
     return None
 
 
-def main(output):
+def get_prediction():
+    result = {}
     calendar = get_json(ERGAST_CALENDAR)
-    now = datetime.datetime.now(datetime.timezone.utc)
 
-    # print(calendar)
+    # Error getting f1 calendar
+    if not calendar:
+        return result
+
+    now = datetime.datetime.now(datetime.timezone.utc)
     race_next = None
+    valid_period = False
     for race in sorted(calendar['MRData']['RaceTable']['Races'], key=lambda x: int(x['round'])):
         race_dt = parse(race['date'] + ' ' + race['time'])
         if race_dt > now:
             race_next = race
+            valid_period = True
             break
-    # print(race_dt)
-    # print(race_next)
+
+    # The f1 calendar is stale
+    if not valid_period:
+        return result
 
     data = get_json(PREDICTOR_URL)
+
+    # The f1-predictor fails to return meaningful data
     if not data:
-        return
-    
+        return result
+
     if data['race_name'] != raname_race_name(race_next['raceName'], race_next['season']):
         print("Race Name Mismatch between predictor and ergast:",
-              end=' ', file=output)
+              end=' ')
         print(data['race_name'], "!=", raname_race_name(
-            race_next['raceName'], race_next['season']), file=output)
-        return
+            race_next['raceName'], race_next['season']))
+        return result
 
-    print("Next Race:", data['race_name'], file=output)
-    print(file=output)
+    result['race_name'] = data['race_name']
+
     for part in ['qualifying', 'race']:
-        print('%s Ranking: \n' % (part.capitalize()), file=output)
+        result[part] = {}
         order_keys = sorted(
             list(data[part]['ranking'].keys()), key=lambda x: data[part]['ranking'][x])
+        result[part]['ranking'] = order_keys
+        result[part]['ranking_string'] = ""
         for driver in order_keys:
-            print("\t%s. %s" %
-                  (ordinal(data[part]['ranking'][driver]), driver), file=output)
+            result[part]['ranking_string'] += "%s. %s\n" % (
+                ordinal(data[part]['ranking'][driver]), driver)
 
+        if result[part]['ranking_string']:
+            result[part]['ranking_string'] = result[part]['ranking_string'][:-1]
+
+        # Create 2 markdown tables
         half_size = len(order_keys) // 2
 
         table_1 = []
@@ -104,7 +118,7 @@ def main(output):
                 for probs in data[part]['pairwise_probabilities']:
                     if ((rename_drivers(driver_1) == probs['driver_1']) and
                             (rename_drivers(driver_2) == probs['driver_2'])):
-                        prob = '{:.0%}'.format(probs['probability'])
+                        prob = '{:.1%}'.format(probs['probability'])
                 if i < half_size:
                     row_1.append(prob)
                 else:
@@ -114,21 +128,22 @@ def main(output):
 
         colalign = tuple(["left"] + ["right" for i in range(half_size)])
 
-        print(file=output)
-        print('%s Pairwise Probabilities (Part I):\n' %
-              (part.capitalize()), file=output)
-        print(tabulate(table_1, headers="firstrow",
-                       tablefmt="pipe", colalign=colalign), file=output)
-        print('\n', file=output)
-        print('%s Pairwise Probabilities (Part II):\n' %
-              (part.capitalize()), file=output)
-        print(tabulate(table_2, headers="firstrow",
-                       tablefmt="pipe", colalign=colalign), file=output)
-        print('\n', file=output)
-        return
+        result[part]['probabilities_table_1'] = tabulate(
+            table_1, headers="firstrow", tablefmt="pipe", colalign=colalign)
+        result[part]['probabilities_table_2'] = tabulate(
+            table_2, headers="firstrow", tablefmt="pipe", colalign=colalign)
 
+    return result
 
+def setup():
+    expire_after = datetime.timedelta(minutes=5)
+    requests_cache.install_cache(expire_after=expire_after)
+
+def cleanup():
+    requests_cache.remove_expired_responses()
+    
 if __name__ == "__main__":
-    import io
-    with io.open('output.md', 'w', encoding='utf-8') as f_obj:
-        main(f_obj)
+    setup()
+    prediction = get_prediction()
+    cleanup()
+    print(prediction)

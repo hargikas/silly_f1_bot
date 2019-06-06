@@ -17,5 +17,5 @@ rope = "*"
 requests = "*"
 tabulate = "*"
 python-dateutil = "*"
-cachecontrol = {extras = ["filecache"],version = "*"}
 fake-useragent = "*"
+requests-cache = "*"
