@@ -1,4 +1,5 @@
 import re
+import datetime
 
 import praw
 from praw.models import MoreComments
@@ -7,7 +8,32 @@ import next_race
 
 SUBREDDITS = "formula1+Formula1Point5+F1CircleJerk+F1FeederSeries+formuladank"
 
+
+def schedule_reply(comment, msg):
+    try:
+        schedule_reply.append((comment, msg))
+    except AttributeError:
+        schedule_reply.pending = [(comment, msg)]
+
+    try:
+        while schedule_reply.pending:
+            cur_comment, cur_msg = schedule_reply.pending[0]
+            cur_comment.refresh()
+            if cur_comment.body and cur_comment.author:
+                cur_comment.upvote()
+                req_dt = datetime.datetime.utcfromtimestamp(cur_comment.created_utc)
+                res_dt = datetime.datetime.utcnow()
+                diff_td = res_dt - req_dt
+                cur_msg += '*Total time to respond: %d seconds.*' % (diff_td.total_seconds())
+                cur_comment.reply(cur_msg)
+
+            del schedule_reply.pending[0]
+    except praw.exceptions.APIException as exc:
+        print('APIException:', exc.message)
+
+
 def inspect_comments(subs):
+    print("Inspecting comments of the selected subs")
     total = 0
     replied = 0
     bot_username = 'f1_predictor'
@@ -18,13 +44,10 @@ def inspect_comments(subs):
                 continue
             total += 1
 
-            #print("Author:", comment.author)
-            #print("Subreddit:", comment.subreddit.display_name)
-            #print(comment.body)
-            #print(80*'-')
-
             match = regex.search(comment.body)
             if match:
+                print("I was called by /u/%s in /r/%s" %
+                      (comment.author, comment.subreddit.display_name))
                 replied += 1
                 msg = 'Thank you /u/%s for summoning me!\n\n' % (
                     comment.author)
@@ -83,9 +106,9 @@ def inspect_comments(subs):
                 else:
                     msg += "Sorry! I am naive and stupid and I couldn't understand your message...\n\n"
 
-                msg += '*I am a bot, and this action was performed automatically.*'
-        
-                comment.reply(msg)
+                msg += '*I am a bot, and this action was performed automatically.*\n'
+
+                schedule_reply(comment, msg)
 
     except BaseException:
         print("Parsed %d comments and %d of them where replied" %

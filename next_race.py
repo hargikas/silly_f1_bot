@@ -92,7 +92,7 @@ def get_prediction():
                 ordinal(data[part]['ranking'][driver]), driver)
 
         if result[part]['ranking_string']:
-            result[part]['ranking_string'] = result[part]['ranking_string'][:-1]
+            result[part]['ranking_string'] = result[part]['ranking_string'][:-2]
 
         # Create 2 markdown tables
         half_size = len(order_keys) // 2
