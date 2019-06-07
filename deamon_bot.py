@@ -8,7 +8,7 @@ with Daemonizer() as (is_setup, daemonizer):
     if is_setup:
         # This code is run before daemonization.
         pid_file = Path(__file__).parent / 'f1_bot.pid'
-        path_pid = str(pid_file.resolve())
+        path_pid = str(pid_file)
 
     # We need to explicitly pass resources to the daemon; other variables
     # may not be correct
