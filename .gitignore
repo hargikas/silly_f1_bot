@@ -109,3 +109,4 @@ venv.bak/
 # Application Specific
 cache.sqlite
 cache.sqlite-journal
+praw.ini
