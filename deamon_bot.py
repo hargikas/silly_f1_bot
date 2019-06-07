@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from daemoniker import Daemonizer
+from daemoniker.exceptions import DaemonikerException
 
 import reddit_bot
 
@@ -19,4 +20,7 @@ with Daemonizer() as (is_setup, daemonizer):
         print("The process was forked to the background")
 
 # We are now daemonized, and the parent just exited.
-reddit_bot.main()
+try:
+    reddit_bot.main()
+except DaemonikerException:
+    pid_file.unlink()
