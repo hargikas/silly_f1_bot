@@ -9,6 +9,8 @@ from dateutil.parser import parse
 from fake_useragent import UserAgent
 from tabulate import tabulate
 
+from driver_synonyms import initials_for_driver, rename_drivers
+
 ERGAST_CALENDAR = 'http://ergast.com/api/f1/current.json'
 PREDICTOR_URL = 'http://www.f1-predictor.com/api-next-race-prediction/'
 RETRIES = 10
@@ -16,15 +18,6 @@ RETRIES = 10
 
 def ordinal(n):
     return "%d%s" % (n, "tsnrhtdd"[(math.floor(n/10) % 10 != 1)*(n % 10 < 4)*n % 10::4])
-
-
-def rename_drivers(name):
-    new_name = name.lower()
-    if (new_name == 'verstappen'):
-        new_name = 'max_' + new_name
-    elif (new_name == 'magnussen'):
-        new_name = 'kevin_' + new_name
-    return new_name
 
 
 def raname_race_name(name, season):
@@ -104,15 +97,15 @@ def get_prediction():
         half_size = len(order_keys) // 2
 
         table_1 = []
-        table_1.append(['^row ^vs ^col'] + [driver[0:3].upper()
+        table_1.append(['^row ^vs ^col'] + [initials_for_driver(driver)
                                             for driver in order_keys[:half_size]])
         table_2 = []
-        table_2.append(['^row ^vs ^col'] + [driver[0:3].upper()
+        table_2.append(['^row ^vs ^col'] + [initials_for_driver(driver)
                                             for driver in order_keys[half_size:]])
 
         for driver_1 in order_keys:
-            row_1 = [driver_1[0:3].upper()]
-            row_2 = [driver_1[0:3].upper()]
+            row_1 = [initials_for_driver(driver_1)]
+            row_2 = [initials_for_driver(driver_1)]
             for i, driver_2 in enumerate(order_keys):
                 prob = ''
                 for probs in data[part]['pairwise_probabilities']:
@@ -135,13 +128,16 @@ def get_prediction():
 
     return result
 
+
 def setup():
     expire_after = datetime.timedelta(minutes=5)
     requests_cache.install_cache(expire_after=expire_after)
 
+
 def cleanup():
     requests_cache.remove_expired_responses()
-    
+
+
 if __name__ == "__main__":
     setup()
     prediction = get_prediction()
