@@ -5,17 +5,23 @@ from praw.models import MoreComments
 
 import next_race
 
+SUBREDDITS = "formula1+Formula1Point5+F1CircleJerk+F1FeederSeries+formuladank"
 
-def inspect_comments(subreddit):
+def inspect_comments(subs):
     total = 0
     replied = 0
     bot_username = 'f1_predictor'
     regex = re.compile(bot_username, re.I)
     try:
-        for comment in subreddit.stream.comments(skip_existing=True):
+        for comment in subs.stream.comments(skip_existing=True):
             if isinstance(comment, MoreComments):
                 continue
             total += 1
+
+            #print("Author:", comment.author)
+            #print("Subreddit:", comment.subreddit.display_name)
+            #print(comment.body)
+            #print(80*'-')
 
             match = regex.search(comment.body)
             if match:
@@ -89,8 +95,8 @@ def inspect_comments(subreddit):
 
 def main():
     reddit = praw.Reddit('f1_predictor_bot')
-    subreddit = reddit.subreddit("formula1")
-    inspect_comments(subreddit)
+    subs = reddit.subreddit(SUBREDDITS)
+    inspect_comments(subs)
 
 
 if __name__ == "__main__":
