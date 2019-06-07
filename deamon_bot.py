@@ -12,7 +12,7 @@ with Daemonizer() as (is_setup, daemonizer):
 
     # We need to explicitly pass resources to the daemon; other variables
     # may not be correct
-    is_parent, my_arg1, my_arg2 = daemonizer(path_pid)
+    is_parent = daemonizer(path_pid)
 
     if is_parent:
         # Run code in the parent after daemonization
