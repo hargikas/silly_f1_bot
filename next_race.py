@@ -30,7 +30,8 @@ def get_json(url):
     retries_cnt = 0
     ua = UserAgent()
     headers = {'user-agent': ua.random}
-    with requests.session() as session:
+    expire_after = datetime.timedelta(minutes=5)
+    with requests_cache.CachedSession(expire_after=expire_after) as session:
         session.headers.update(headers)
         while retries_cnt < RETRIES:
             retries_cnt += 1
@@ -87,7 +88,7 @@ def get_prediction():
         result[part]['ranking'] = order_keys
         result[part]['ranking_string'] = ""
         for driver in order_keys:
-            result[part]['ranking_string'] += "%s. %s\n" % (
+            result[part]['ranking_string'] += "%s. %s  \\\n" % (
                 ordinal(data[part]['ranking'][driver]), driver)
 
         if result[part]['ranking_string']:
@@ -129,17 +130,6 @@ def get_prediction():
     return result
 
 
-def setup():
-    expire_after = datetime.timedelta(minutes=5)
-    requests_cache.install_cache(expire_after=expire_after)
-
-
-def cleanup():
-    requests_cache.remove_expired_responses()
-
-
 if __name__ == "__main__":
-    setup()
     prediction = get_prediction()
-    cleanup()
     print(prediction)
