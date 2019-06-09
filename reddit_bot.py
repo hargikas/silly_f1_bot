@@ -120,7 +120,7 @@ def inspect_comments(subs):
 
 def load_subrredits(filename):
     subs = None
-    with io.open(filename, 'r', encoding='utf-8') as f_obj:
+    with io.open(str(filename), 'r', encoding='utf-8') as f_obj:
         lines = [line.strip() for line in f_obj.readlines()]
         subs = '+'.join(lines)
     return subs
