@@ -8,15 +8,21 @@ import reddit_bot
 import time
 
 def isDaemonRunning(pid_file):
+    result = False
     if pid_file.exists():
-        with io.open(pid_file, 'r', encoding='ascii') as f_obj:
+        with io.open(str(pid_file), 'r', encoding='ascii') as f_obj:
             pid = int(f_obj.read().strip())
         if psutil.pid_exists(pid):
             p = psutil.Process(pid=pid)
             with p.oneshot():
                 name = p.name()
-                status = p.status()
-            print("Found process:", name, status)
+            if name.lower() != 'python':
+                pid_file.unlink()
+            else:
+                result = True
+        else:
+            pid_file.unlink()
+    return result
 
 with Daemonizer() as (is_setup, daemonizer):
     if is_setup:
