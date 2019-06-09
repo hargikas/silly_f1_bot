@@ -1,12 +1,12 @@
-import re
 import datetime
+import io
+import re
+from pathlib import Path
 
 import praw
 from praw.models import MoreComments
 
 import next_race
-
-SUBREDDITS = "formula1+Formula1Point5+F1CircleJerk+F1FeederSeries+formuladank"
 
 
 def schedule_reply(comment, msg):
@@ -21,10 +21,12 @@ def schedule_reply(comment, msg):
             cur_comment.refresh()
             if cur_comment.body and cur_comment.author:
                 cur_comment.upvote()
-                req_dt = datetime.datetime.utcfromtimestamp(cur_comment.created_utc)
+                req_dt = datetime.datetime.utcfromtimestamp(
+                    cur_comment.created_utc)
                 res_dt = datetime.datetime.utcnow()
                 diff_td = res_dt - req_dt
-                cur_msg += '*Total time to respond: %d seconds.*' % (diff_td.total_seconds())
+                cur_msg += '*Total time to respond: %d seconds.*' % (
+                    diff_td.total_seconds())
                 cur_comment.reply(cur_msg)
 
             del schedule_reply.pending[0]
@@ -116,9 +118,23 @@ def inspect_comments(subs):
         raise
 
 
+def load_subrredits(filename):
+    subs = None
+    with io.open(filename, 'r', encoding='utf-8') as f_obj:
+        lines = [line.strip() for line in f_obj.readlines()]
+        subs = '+'.join(lines)
+    return subs
+
+
 def main():
+    # Setup Envroment
+    watched_s = load_subrredits(Path(__file__).parent / 'subreddits.txt')
     reddit = praw.Reddit('f1_predictor_bot')
-    subs = reddit.subreddit(SUBREDDITS)
+
+    # Get the subreedit object
+    subs = reddit.subreddit(watched_s)
+
+    # Actual bot logic
     inspect_comments(subs)
 
 
