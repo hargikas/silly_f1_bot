@@ -9,7 +9,7 @@ import time
 
 def isDaemonRunning(pid_file):
     if pid_file.exists():
-        with io.open(pid_file, 'r', enconding='ascii') as f_obj:
+        with io.open(pid_file, 'r', encoding='ascii') as f_obj:
             pid = int(f_obj.read().strip())
         if psutil.pid_exists(pid):
             p = psutil.Process(pid=pid)
