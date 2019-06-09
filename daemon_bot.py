@@ -1,11 +1,11 @@
-from pathlib import Path
 import io
+from pathlib import Path
 
-from daemoniker import Daemonizer
 import psutil
+from daemoniker import Daemonizer
 
 import reddit_bot
-import time
+
 
 def isDaemonRunning(pid_file):
     result = False
@@ -24,13 +24,13 @@ def isDaemonRunning(pid_file):
             pid_file.unlink()
     return result
 
+
 with Daemonizer() as (is_setup, daemonizer):
     if is_setup:
         # This code is run before daemonization.
         pid_file = Path(__file__).parent / 'f1_bot.pid'
         path_pid = str(pid_file)
         isDaemonRunning(pid_file)
-        
 
     # We need to explicitly pass resources to the daemon; other variables
     # may not be correct
@@ -41,5 +41,4 @@ with Daemonizer() as (is_setup, daemonizer):
         print("The process was forked to the background")
 
 # We are now daemonized, and the parent just exited.
-#reddit_bot.main()
-time.sleep(300)
+reddit_bot.main()
