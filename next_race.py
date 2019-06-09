@@ -88,11 +88,11 @@ def get_prediction():
         result[part]['ranking'] = order_keys
         result[part]['ranking_string'] = ""
         for driver in order_keys:
-            result[part]['ranking_string'] += "%s. %s  \\\n" % (
+            result[part]['ranking_string'] += "%s. %s  \n" % (
                 ordinal(data[part]['ranking'][driver]), driver)
 
         if result[part]['ranking_string']:
-            result[part]['ranking_string'] = result[part]['ranking_string'][:-2]
+            result[part]['ranking_string'] = result[part]['ranking_string'][:-1]
 
         # Create 2 markdown tables
         half_size = len(order_keys) // 2
